@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:zc_dodiddone/pages/main_page.dart';
 
 import '../theme/theme.dart';
 
@@ -125,8 +126,10 @@ class _LoginPageState extends State<LoginPage> {
                 ElevatedButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      // Обработка входа/регистрации
-                      // ...
+                      Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const MainPage()));
                     }
                   },
                   style: ElevatedButton.styleFrom(
