@@ -53,10 +53,60 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/zerocoder_1.png', // Путь к изображению
+                      height: 60, // Высота изображения
+                      // Ширина изображения
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'zerocoder',
+                      style: TextStyle(
+                        fontSize: 62,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 30),
+                RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: 'Do',
+                        style: TextStyle(
+                          color: DoDidDoneTheme.lightTheme.colorScheme.primary,
+                        ),
+                      ),
+                      TextSpan(
+                        text: 'Did',
+                        style: TextStyle(
+                          color: Colors.white,
+                        ),
+                      ),
+                      TextSpan(
+                        text: 'Done',
+                        style: TextStyle(
+                          color:
+                              DoDidDoneTheme.lightTheme.colorScheme.secondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10), // Добавляем отступ
                 Text(
-                  _isRegistration ? 'Регистрация' : 'Вход',
+                  'Вход',
                   style: TextStyle(
-                    fontSize: 32,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
