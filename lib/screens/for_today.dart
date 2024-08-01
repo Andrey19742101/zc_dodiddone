@@ -4,21 +4,21 @@ import 'package:zc_dodiddone/services/firebase_data_sevice.dart';
 
 import '../widgets/task_item.dart';
 
-class TasksPage extends StatefulWidget {
-  const TasksPage({super.key, required this.taskService});
+class ForTodayPage extends StatefulWidget {
+  const ForTodayPage({super.key, required this.taskService});
   final TaskService taskService;
+
   @override
-  State<TasksPage> createState() => _TasksPageState();
+  State<ForTodayPage> createState() => _ComplededPageState();
 }
 
-class _TasksPageState extends State<TasksPage> {
+class _ComplededPageState extends State<ForTodayPage> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
       stream: widget.taskService.tasksCollection
-          .where('is_for_today', isEqualTo: false)
-          .where('completed', isEqualTo: false)
-          .snapshots(), //'), //получаем поток данных из сервиса
+          .where('is_for_today', isEqualTo: true)
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const Center(child: Text('Ошибка при загрузке задач'));
@@ -50,13 +50,13 @@ class _TasksPageState extends State<TasksPage> {
               description: taskDescription,
               deadline: taskDeadline,
               toLeft: () async {
-                await widget.taskService.toggleTaskCompletion(tasks[index].id);
+                await widget.taskService.toggleTaskForAll(tasks[index].id);
               },
               toRight: () async {
-                await widget.taskService.toggleTaskForToday(tasks[index].id);
+                await widget.taskService.toggleTaskCompletion(tasks[index].id);
               },
               taskId: tasks[index].id,
-              screenIndex: 0,
+              screenIndex: 1,
             );
           },
         );

@@ -1,22 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:zc_dodiddone/pages/main_page.dart';
+
+// Импортируем AuthenticationService
+import 'package:zc_dodiddone/pages/profile_page.dart';
+import 'package:zc_dodiddone/services/firebase_auth.dart';
 
 import '../theme/theme.dart';
+import 'main_page.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key, required this.toggleTheme});
+  final Function toggleTheme;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  bool isLogin = true; // Флаг для определения режима (вход/регистрация)
+  final _formKey = GlobalKey<FormState>(); // Ключ для формы
+  final _emailController = TextEditingController(); // Контроллер для поля email
+  final _passwordController =
+      TextEditingController(); // Контроллер для поля пароля
   final _confirmPasswordController =
-      TextEditingController(); // Контроллер для подтверждения пароля
-  bool _isRegistration = false;
+      TextEditingController(); // Контроллер для поля подтверждения пароля
+  final _authenticationService =
+      AuthenticationService(); // Экземпляр AuthenticationService
 
   @override
   void dispose() {
@@ -29,54 +37,60 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
+        body: SingleChildScrollView(
+      child: Container(
+        height: MediaQuery.of(context).size.height,
+        width: MediaQuery.of(context).size.width,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
+            begin: Alignment.topLeft,
             end: Alignment.bottomCenter,
-            colors: _isRegistration
+            colors: isLogin
                 ? [
-                    DoDidDoneTheme.lightTheme.colorScheme.primary,
                     DoDidDoneTheme.lightTheme.colorScheme.secondary,
+                    DoDidDoneTheme.lightTheme.colorScheme.primary,
                   ]
                 : [
-                    DoDidDoneTheme.lightTheme.colorScheme.secondary,
                     DoDidDoneTheme.lightTheme.colorScheme.primary,
+                    DoDidDoneTheme.lightTheme.colorScheme.secondary,
                   ],
-            stops: const [0.1, 0.9], // Primary занимает 90%
+            stops: const [0.1, 0.9], // Основной цвет занимает 90%
           ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Form(
-            key: _formKey,
+            key: _formKey, // Добавляем ключ для формы
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      'assets/zerocoder_1.png', // Путь к изображению
-                      height: 60, // Высота изображения
-                      // Ширина изображения
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'zerocoder',
-                      style: TextStyle(
-                        fontSize: 62,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                Flexible(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/zerocoder_1.png', // Замените на правильный путь к файлу
+                        height: 60, // Устанавливаем высоту изображения
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      // Добавляем текст "zerocoder"
+                      const Text(
+                        'zerocoder',
+                        style: TextStyle(
+                          fontSize: 64,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white, // Белый цвет текста
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 30),
+                // Добавляем текст "Do"
                 RichText(
                   text: TextSpan(
-                    style: TextStyle(
-                      fontSize: 32,
+                    style: const TextStyle(
+                      fontSize: 48,
                       fontWeight: FontWeight.bold,
                     ),
                     children: [
@@ -86,11 +100,9 @@ class _LoginPageState extends State<LoginPage> {
                           color: DoDidDoneTheme.lightTheme.colorScheme.primary,
                         ),
                       ),
-                      TextSpan(
+                      const TextSpan(
                         text: 'Did',
-                        style: TextStyle(
-                          color: Colors.white,
-                        ),
+                        style: TextStyle(color: Colors.white),
                       ),
                       TextSpan(
                         text: 'Done',
@@ -102,36 +114,45 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 10), // Добавляем отступ
+                const SizedBox(height: 30),
+                // Заголовок
                 Text(
-                  'Вход',
-                  style: TextStyle(
-                    fontSize: 24,
+                  isLogin ? 'Вход' : 'Регистрация',
+                  style: const TextStyle(
+                    fontSize: 32,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 30),
                 TextFormField(
-                  controller: _emailController,
+                  controller:
+                      _emailController, // Используем контроллер для поля email
                   decoration: const InputDecoration(
                     hintText: 'Почта',
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(20)),
+                      borderSide: BorderSide.none,
                     ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Пожалуйста, введите email';
                     }
+                    if (!value.contains('@')) {
+                      return 'Неверный формат email';
+                    }
                     return null;
                   },
                 ),
                 const SizedBox(height: 20),
+
+                // Поле пароля
                 TextFormField(
-                  controller: _passwordController,
+                  controller:
+                      _passwordController, // Используем контроллер для поля пароля
                   obscureText: true,
                   decoration: const InputDecoration(
                     hintText: 'Пароль',
@@ -139,6 +160,7 @@ class _LoginPageState extends State<LoginPage> {
                     fillColor: Colors.white,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(20)),
+                      borderSide: BorderSide.none,
                     ),
                   ),
                   validator: (value) {
@@ -148,11 +170,13 @@ class _LoginPageState extends State<LoginPage> {
                     return null;
                   },
                 ),
-                // Поле для подтверждения пароля отображается только при регистрации
-                if (_isRegistration) const SizedBox(height: 20),
-                if (_isRegistration)
+                const SizedBox(height: 20),
+
+                // **Новое поле "Повторить пароль"**
+                if (!isLogin) // Отображаем только при регистрации
                   TextFormField(
-                    controller: _confirmPasswordController,
+                    controller:
+                        _confirmPasswordController, // Используем контроллер для поля подтверждения пароля
                     obscureText: true,
                     decoration: const InputDecoration(
                       hintText: 'Повторить пароль',
@@ -160,6 +184,7 @@ class _LoginPageState extends State<LoginPage> {
                       fillColor: Colors.white,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(20)),
+                        borderSide: BorderSide.none,
                       ),
                     ),
                     validator: (value) {
@@ -173,48 +198,90 @@ class _LoginPageState extends State<LoginPage> {
                     },
                   ),
                 const SizedBox(height: 30),
+
+                // Кнопка "Войти"
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (_formKey.currentState!.validate()) {
-                      Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const MainPage()));
+                      // Проверяем, валидна ли форма
+                      if (isLogin) {
+                        // Вход в систему
+                        try {
+                          final userCredential = await _authenticationService
+                              .signInWithEmailAndPassword(_emailController.text,
+                                  _passwordController.text);
+                          if (userCredential != null &&
+                              userCredential.user?.emailVerified == true) {
+                            // Переход на MainPage
+                            Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => MainPage(
+                                        toggleTheme: widget.toggleTheme)));
+                          } else if (userCredential != null) {
+                            Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => ProfilePage(
+                                        toggleTheme: widget.toggleTheme)));
+                          }
+                        } catch (e) {
+                          // Вывод сообщения об ошибке пользователю
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Ошибка входа: $e')));
+                        }
+                      } else {
+                        // Регистрация
+                        try {
+                          final userCredential = await _authenticationService
+                              .createUserWithEmailAndPassword(
+                                  _emailController.text,
+                                  _passwordController.text);
+                          if (userCredential != null) {
+                            // Переход на ProfilePage
+                            Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => ProfilePage(
+                                          toggleTheme: widget.toggleTheme,
+                                        )));
+                          }
+                        } catch (e) {
+                          // Вывод сообщения об ошибке пользователю
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('Ошибка регистрации: $e')));
+                        }
+                      }
                     }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _isRegistration
+                    backgroundColor: !isLogin
                         ? DoDidDoneTheme.lightTheme.colorScheme.primary
                         : DoDidDoneTheme.lightTheme.colorScheme.secondary,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 50, vertical: 15),
-                    textStyle: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    textStyle: const TextStyle(fontSize: 18),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                  child: Text(
-                    _isRegistration ? 'Зарегистрироваться' : 'Войти',
-                    style: const TextStyle(color: Colors.white),
-                  ),
+                  child: Text(isLogin ? 'Войти' : 'Зарегистрироваться'),
                 ),
                 const SizedBox(height: 20),
+
+                // Кнопка перехода на другую страницу
                 TextButton(
                   onPressed: () {
                     setState(() {
-                      _isRegistration = !_isRegistration;
+                      isLogin = !isLogin;
                     });
                   },
                   child: Text(
-                    _isRegistration
-                        ? 'У меня уже есть аккаунт'
-                        : 'У меня еще нет аккаунта',
-                    style: TextStyle(
+                    isLogin
+                        ? 'У меня ещё нет аккаунта...'
+                        : 'Уже есть аккаунт...',
+                    style: const TextStyle(
                       color: Colors.white,
-                      decoration: TextDecoration.underline,
                     ),
                   ),
                 ),
@@ -223,6 +290,6 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
-    );
+    ));
   }
 }

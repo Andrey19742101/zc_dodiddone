@@ -1,25 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:zc_dodiddone/screens/all_tasks.dart';
-import 'package:zc_dodiddone/theme/theme.dart';
-import 'package:zc_dodiddone/screens/profile.dart';
+import '../screens/all_tasks.dart';
+import '../screens/completed.dart';
+import '../screens/for_today.dart';
+import '../services/firebase_data_sevice.dart';
+import '../theme/theme.dart';
+import '../widgets/dialog_widget.dart';
+import 'profile_page.dart';
 
 class MainPage extends StatefulWidget {
-  const MainPage({Key? key}) : super(key: key);
+  const MainPage({super.key, required this.toggleTheme});
+  final Function toggleTheme;
 
   @override
   State<MainPage> createState() => _MainPageState();
 }
 
 class _MainPageState extends State<MainPage> {
-  int _selectedIndex = 0;
+  late TaskService taskService;
 
-  static const List<Widget> _widgetOptions = <Widget>[
-    TasksPage(),
-    Text('Сегодня'),
-    Text('Выполнено'),
-    ProfilePage(), // Заменяем Text на ProfilePage
-  ];
+  @override
+  void initState() {
+    taskService = TaskService();
+    super.initState();
+  }
+
+  int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
     setState(() {
@@ -27,135 +32,79 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  // Функция для открытия диалогового окна
+  // Функция для показа диалога добавления задачи
   void _showAddTaskDialog() {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (context) {
         String title = '';
         String description = '';
         DateTime deadline = DateTime.now();
 
-        return Dialog(
-          // Используем Dialog вместо AlertDialog
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16), // Скругленные углы
-          ),
-          child: Container(
-            width: 400, // Ширина диалогового окна
-            padding: const EdgeInsets.all(20), // Отступ для содержимого
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  onChanged: (value) {
-                    title = value;
-                  },
-                  decoration: const InputDecoration(
-                    labelText: 'Название задачи',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  onChanged: (value) {
-                    description = value;
-                  },
-                  decoration: const InputDecoration(
-                    labelText: 'Описание',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16), // Отступ для кнопки
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Открыть календарь для выбора даты и времени
-                      showDateTimePicker(context).then((selectedDateTime) {
-                        if (selectedDateTime != null) {
-                          deadline = selectedDateTime;
-                        }
-                      });
-                    },
-                    child: const Text('Выбрать дедлайн'),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                    'Дедлайн: ${DateFormat('dd.MM.yy HH:mm').format(deadline)}'),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end, // Кнопки справа
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text('Отмена'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        // Обработка добавления задачи
-                        // Например, можно добавить задачу в список задач
-                        // и закрыть диалоговое окно
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text('Добавить'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+        return DialogWidget(
+          taskService: taskService,
+          title: title,
+          description: description,
+          deadline: deadline,
         );
       },
     );
   }
 
-  // Функция для показа диалога выбора даты и времени
-  Future<DateTime?> showDateTimePicker(BuildContext context) async {
-    return await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime(2100),
-    ).then((pickedDate) {
-      if (pickedDate == null) return null;
-
-      return showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(pickedDate),
-      ).then((pickedTime) {
-        if (pickedTime == null) return null;
-
-        return DateTime(
-          pickedDate.year,
-          pickedDate.month,
-          pickedDate.day,
-          pickedTime.hour,
-          pickedTime.minute,
-        );
-      });
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    final List<Widget> _widgetOptions = <Widget>[
+      TasksPage(
+        taskService: taskService,
+      ),
+      ForTodayPage(
+        taskService: taskService,
+      ),
+      ComplededPage(
+        taskService: taskService,
+      ), // Используем ComplededPage для 3-го элемента
+    ];
+    final List<Widget> _titleOptions = [
+      Text('Нераспределённые'),
+      const Text('На сегодня'),
+      Text('Завершены')
+    ];
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.transparent, // Прозрачный AppBar
-        elevation: 0, // Убираем тень
+        title: _titleOptions.elementAt(_selectedIndex),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          ProfilePage(toggleTheme: widget.toggleTheme)));
+            },
+            icon: const Icon(
+              Icons.person_2,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
       body: Container(
+        // Добавляем Container для градиента
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
+            begin: Alignment.topLeft,
             end: Alignment.bottomCenter,
             colors: [
-              DoDidDoneTheme.lightTheme.colorScheme.secondary,
-              DoDidDoneTheme.lightTheme.colorScheme.primary,
+              // Используем Theme.of(context) для получения текущей темы
+              Theme.of(context).brightness == Brightness.light
+                  ? DoDidDoneTheme.lightTheme.colorScheme.secondary
+                  : DoDidDoneTheme.darkTheme.colorScheme.secondary,
+              Theme.of(context).brightness == Brightness.light
+                  ? DoDidDoneTheme.lightTheme.colorScheme.primary
+                  : DoDidDoneTheme.darkTheme.colorScheme.primary,
             ],
+            stops: const [0.1, 0.9], // Основной цвет занимает 90%
           ),
         ),
         child: Center(
@@ -165,7 +114,7 @@ class _MainPageState extends State<MainPage> {
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.task_alt),
+            icon: Icon(Icons.list),
             label: 'Задачи',
           ),
           BottomNavigationBarItem(
@@ -175,10 +124,6 @@ class _MainPageState extends State<MainPage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.check_circle),
             label: 'Выполнено',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Профиль',
           ),
         ],
         currentIndex: _selectedIndex,

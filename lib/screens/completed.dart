@@ -1,24 +1,24 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:zc_dodiddone/services/firebase_data_sevice.dart';
 
+import '../services/firebase_data_sevice.dart';
 import '../widgets/task_item.dart';
 
-class TasksPage extends StatefulWidget {
-  const TasksPage({super.key, required this.taskService});
+class ComplededPage extends StatefulWidget {
+  const ComplededPage({super.key, required this.taskService});
   final TaskService taskService;
+
   @override
-  State<TasksPage> createState() => _TasksPageState();
+  State<ComplededPage> createState() => _ComplededPageState();
 }
 
-class _TasksPageState extends State<TasksPage> {
+class _ComplededPageState extends State<ComplededPage> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
       stream: widget.taskService.tasksCollection
-          .where('is_for_today', isEqualTo: false)
-          .where('completed', isEqualTo: false)
-          .snapshots(), //'), //получаем поток данных из сервиса
+          .where('completed', isEqualTo: true)
+          .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const Center(child: Text('Ошибка при загрузке задач'));
@@ -32,8 +32,7 @@ class _TasksPageState extends State<TasksPage> {
 
         if (tasks.isEmpty) {
           return const Center(
-              child: Text(
-                  'Нет задач, время отдыхать.. \n или создать новую задачу?'));
+              child: Text('Нет завершённых задач, время действовать!'));
         }
 
         return ListView.builder(
@@ -50,13 +49,15 @@ class _TasksPageState extends State<TasksPage> {
               description: taskDescription,
               deadline: taskDeadline,
               toLeft: () async {
-                await widget.taskService.toggleTaskCompletion(tasks[index].id);
-              },
-              toRight: () async {
                 await widget.taskService.toggleTaskForToday(tasks[index].id);
               },
-              taskId: tasks[index].id,
-              screenIndex: 0,
+              toRight: () async {
+                await widget.taskService.toggleTaskForAll(tasks[index].id);
+              },
+
+              // Добавьте обработчики для изменения и удаления задач
+
+              taskId: tasks[index].id, screenIndex: 2,
             );
           },
         );

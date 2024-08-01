@@ -1,16 +1,32 @@
 import 'package:flutter/material.dart';
-import '../pages/login_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 
-class ProfilePage extends StatefulWidget {
-  const ProfilePage({Key? key}) : super(key: key);
+import '../pages/login_page.dart';
+import '../services/firebase_auth.dart';
+import '../utils/image_picer_util.dart'; // Импортируем ImagePickerUtil
+
+class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key, required this.toggleTheme});
+  final Function toggleTheme;
+
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
-  bool isEmailVerified = false; // Флаг для проверки подтверждения почты
+class _ProfileScreenState extends State<ProfileScreen> {
+  final _authenticationService =
+      AuthenticationService(); // Экземпляр AuthenticationService
+  File? _selectedImage; // Переменная для хранения выбранного изображения
+  bool _showSaveButton = false; // Флаг для отображения кнопки "Сохранить"
+
   @override
   Widget build(BuildContext context) {
+    final user =
+        _authenticationService.currentUser; // Получаем текущего пользователя
+
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
@@ -18,51 +34,50 @@ class _ProfilePageState extends State<ProfilePage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Аватар
-          const CircleAvatar(
-            radius: 50,
-            backgroundImage: const AssetImage(
-                'assets/_1.png'), // Замените на реальный путь к аватару
+          Stack(
+            children: [
+              CircleAvatar(
+                radius: 50,
+                backgroundImage: _selectedImage != null
+                    ? FileImage(_selectedImage!)
+                        as ImageProvider // Используем выбранное изображение, если оно есть
+                    : user?.photoURL != null
+                        ? NetworkImage(user!.photoURL!)
+                        : const AssetImage('assets/_1.png') as ImageProvider,
+              ),
+              Positioned(
+                  bottom: -16,
+                  right: -16,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.camera_alt,
+                      color: Colors.blue,
+                    ),
+                    onPressed: () {
+                      _showImagePickerDialog(context);
+                    },
+                  )),
+            ],
           ),
           const SizedBox(height: 20),
-          // Почта
-          const Text(
-            'example@email.com', // Замените на реальную почту пользователя
-            style: TextStyle(fontSize: 18),
-          ),
-          const SizedBox(height: 10),
-          // Кнопка подтверждения почты (отображается, если почта не подтверждена)
-          if (!isEmailVerified)
+          if (_showSaveButton)
             ElevatedButton(
               onPressed: () {
-                // Обработка отправки запроса подтверждения почты
-                // Например, можно показать диалог с сообщением о том, что письмо отправлено
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Подтверждение почты'),
-                    content: const Text(
-                        'Письмо с подтверждением отправлено на ваш адрес.'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('OK'),
-                      ),
-                    ],
-                  ),
-                );
+                // Сохранение нового аватара
               },
-              child: const Text('Подтвердить почту'),
+              child: const Text('Сохранить'),
             ),
-          const SizedBox(height: 20),
-          // Кнопка выхода из профиля
           ElevatedButton(
             onPressed: () {
-              // Обработка выхода из профиля
-              // Например, можно перейти на страницу входа
-              Navigator.pushReplacement(context,
-                  MaterialPageRoute(builder: (context) {
-                return const LoginPage();
-              }));
+              // Выйти из аккаунта
+              _authenticationService
+                  .signOut()
+                  .then((value) => Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                LoginPage(toggleTheme: widget.toggleTheme)),
+                      ));
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red, // Красный цвет для кнопки выхода
@@ -71,6 +86,54 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
       ),
+    );
+  }
+
+  // Диалог выбора изображения
+  void _showImagePickerDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Выберите изображение'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Из галереи'),
+                onTap: () async {
+                  // Выбор изображения из галереи
+                  File? imageFile =
+                      await ImagePickerUtil.pickImageFromGallery();
+                  if (imageFile != null) {
+                    setState(() {
+                      _selectedImage = imageFile;
+                      _showSaveButton = true; // Показываем кнопку "Сохранить"
+                    });
+                  }
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Сделать снимок'),
+                onTap: () async {
+                  // Съемка изображения с камеры
+                  File? imageFile = await ImagePickerUtil.pickImageFromCamera();
+                  if (imageFile != null) {
+                    setState(() {
+                      _selectedImage = imageFile;
+                      _showSaveButton = true; // Показываем кнопку "Сохранить"
+                    });
+                  }
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
